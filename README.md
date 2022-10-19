@@ -1,2 +1,2 @@
 # AnalysisTool
-code in progress for image analysis
+code in progress for image analysis of mitosis
