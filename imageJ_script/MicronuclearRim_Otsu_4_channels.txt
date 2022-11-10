@@ -1,0 +1,132 @@
+
+//shiwei; new script for 4 channel analysis
+
+name = getTitle();
+path = getDirectory("image");
+
+// Preprocess image to generate masks
+run("Duplicate...", " ");
+run("Auto Threshold", "method=Li white");
+setOption("BlackBackground", false);
+run("Convert to Mask", "method=Default background=Default");
+run("Fill Holes", "stack");
+
+//uncomment below if doing watershedding
+run("Watershed", "stack");
+setTool("wand");
+
+//Select masks for ROI
+waitForUser ("Select 3* regions of interest in the order of MN, PN and background (['t'] to add) and Press OK after your selection."); 
+//Select ROI
+
+name2 = getTitle();
+selectWindow(name2);
+close();
+selectWindow(name);
+
+// label names 
+label_list = newArray("MN", "PN", "BG");
+
+
+counts=roiManager("count");
+if (counts%3!=0){
+	selectWindow ("ROI Manager");
+    run("Close" );
+    exit ("The number of roi objects is incorrect!")
+}
+
+
+array=newArray(counts); 
+
+
+//Measure the first channel (1_405) below
+for(i=0; i<counts; i++) {
+    roiManager("Select", i);
+    roiManager("Rename", "Channel-1_"+label_list[i%3]);
+    roiManager("Update");
+    roiManager("Measure");
+}
+
+
+// Secondary mask modification if necessary
+setKeyDown("alt");  // this convert "Open Next" as "Open Previous"
+run("Open Next");
+roiManager("Show All without labels");
+
+// generate band for analysis for other channels
+for(i=0; i<counts; i++) {
+    roiManager("Select", i);
+    roiManager("Rename", "Channel-2_"+label_list[i%3]);
+
+    // MN mask
+    if (i%3==0){
+    run("Enlarge...", "enlarge=-2");
+    run("Make Band...", "band=5");
+    roiManager("Update");
+    }
+
+    // PN mask
+    if (i%3==1) {
+    run("Enlarge...", "enlarge=-4");
+    run("Make Band...", "band=5");
+    roiManager("Update");
+    }
+
+    // BG
+    if (i%3==2) {roiManager("Update");
+    }
+
+}
+waitForUser ("Modify ROIs if needed and Press OK");
+//
+
+//Measure the channel (2_488) below
+for(i=0; i<counts; i++) {
+    roiManager("Select", i);
+    roiManager("Measure");
+}
+//
+
+
+
+//Measure the next channel (3_568) below
+setKeyDown("alt"); // this convert "Open Next" as "Open Previous"
+run("Open Next");
+roiManager("Show All without labels");
+waitForUser ("Modify ROIs if needed and Press OK");
+for(i=0; i<counts; i++) {
+    roiManager("Select", i);
+    roiManager("Rename", "Channel-3_"+label_list[i%3]);
+    roiManager("Update");
+    roiManager("Measure");
+}
+//
+
+
+//Measure the next channel (4_647) below
+setKeyDown("alt"); // this convert "Open Next" as "Open Previous"
+run("Open Next");
+roiManager("Show All without labels");
+waitForUser ("Modify ROIs if needed and Press OK");
+for(i=0; i<counts; i++) {
+    roiManager("Select", i);
+    roiManager("Rename", "Channel-4_"+label_list[i%3]);
+    roiManager("Update");
+    roiManager("Measure");
+}
+
+
+
+// close images
+close();
+
+// close roi manager
+selectWindow ("ROI Manager");
+//roiManager("Save", path + name + " ROI.zip");
+run("Close" );
+
+
+
+
+
+

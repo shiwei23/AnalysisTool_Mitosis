@@ -1,0 +1,80 @@
+// prerequirment: Updated version of FIJI with ridge detection and tubeness plugin installed.
+// install "read and write excel" from the updater.
+
+// Specifiy global variables; Process files only in 488 channel
+
+input = getDirectory("Input directory");
+output = getDirectory("Output directory");
+Dialog.create("File Type");
+Dialog.addString("File suffix: ", ".jpg");
+suffix = Dialog.getString();
+
+setBatchMode(false);
+// setBatchMode to be false to show active images for selection
+
+
+processFolder (input);
+// run processFolder function
+
+// def the function to scan through the input folder and call the process function.
+function processFolder(input){
+	list = getFileList(input);
+	for (i = 0; i < list.length; i++) {
+		if (File.isDirectory(input + list[i]))
+			processFolder("" + input + list[i]); 
+		if (endsWith(list[i], suffix))
+			processFile(input, output, list[i]);	
+	}
+}
+
+
+
+// def the function to process the folder.
+function processFile(input, output, file) {
+        	open (input + file);
+			run("Tubeness", "sigma=1.0000 use"); // sigma = 1 for 60x; sigma = 1.5 for 100x
+			setOption("ScaleConversions", true);
+			run("8-bit");
+                        selectWindow("tubeness of " + File.getName (file));
+			getLocationAndSize(x, y, width, height);
+			setLocation(x + 300, y - 15);
+
+                        // move the new image window to the left of the original image
+
+			run("Ridge Detection");
+			
+			// setting interface for ridge detection will pop up; Select approiate settings
+			// and use preview to check the results.
+			// for HeLa cells, try high contrast ~ 300; for U2OS, try high contrast ~ 100.
+			// line width and minimal length for ~ 5 
+			
+			// after ridge detection is performed, roi outside of the cell should be manually delelted.
+			waitForUser("Remove ROI outside of the cell and Press OK to proceed.");
+			// imaging saving and excel exporting will be done automatically after the user pressed OK.
+			
+			run("Select All");
+            roiManager("Measure");
+            selectWindow ("Results");
+            
+            run("Read and Write Excel");
+            // Use the following code template to replace the above code if you want to save the excel to a desired destination:
+            // run("Read and Write Excel", "file=[D:/Data Analysis/STIM1 sirDNA exp1_60x For Test/Tubeness of Cropped Cells_All_measurements.xlsx]");
+            selectWindow ("Results");
+            run("Close");
+            
+			roiManager("Show All without labels");
+			selectWindow("tubeness of " + File.getName (file));
+			saveAs("jpeg", output + "tubeness of " + File.getName (file));
+			close();	
+			selectWindow(File.getName (file));
+			close();
+			selectWindow ("ROI Manager");
+			run("Close" );
+			
+}
+
+
+			
+
+
+			

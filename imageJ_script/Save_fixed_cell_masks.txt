@@ -1,0 +1,49 @@
+//shiwei; script to get cell info with manual cropping
+// temp scrip for batch cell mask drawing for actin
+//get ims directory
+dir=getDirectory("User Choose Cell Info Image Folder");
+file_list = getFileList(dir);
+output = getDirectory("Output directory");
+
+//initiate im index for roiManager
+f_ind=0;
+
+//select area of interest and measure
+//set desired measurement options first
+for(f=0;f<file_list.length;f++){
+	file=dir+file_list[f];
+	if (endsWith(file, ".TIF")){
+	    f_ind=f_ind+1;
+	    open(file);
+	    name = getTitle();
+	    selectWindow(name);
+	    waitForUser ("Draw rectangle to select cell of interest and add('t') mask."); 
+	    //roiManager("Add");
+	    //selectWindow ("ROI Manager");
+	    counts=roiManager("count");
+	    if (counts==1){
+	    selectWindow ("ROI Manager");
+	    roiManager("Select",0);
+	    roiManager("Save", output + f_ind + ".roi");
+	    roiManager("Delete");
+        run("Close");
+        }
+        //skip if no selection
+        else {
+		selectWindow ("ROI Manager");
+        run("Close");
+        }
+	    selectWindow(name);
+	    close();	
+	}
+}
+
+
+
+
+
+
+
+
+
+

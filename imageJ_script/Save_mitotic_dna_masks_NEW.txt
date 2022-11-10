@@ -1,0 +1,101 @@
+//shiwei; script to save semi-manually drawn DNA masks
+
+//get ims directory
+dir_in=getDirectory("Choose raw image folder");
+dir_out=getDirectory("Select DNA mask save folder");
+
+files = getFileList(dir_in);
+
+//define search pattern
+ch_name = "_w1642 laser_t";
+ch_digit_time_pattern = "txx.TIF";
+
+
+// get all valid files
+valid_files = newArray();
+for(f=0;f<files.length;f++){
+	file=dir_in+files[f];
+	if(indexOf(file,ch_name)>=0){
+		if(indexOf(file, 'thumb')<0){
+			valid_files = Array.concat(valid_files, file);
+			} 
+	}
+}
+
+
+// define function to sort valid files by their timepoints
+//adapted from: https://forum.image.sc/t/array-sort-array-macro-how-to-sort-file-names-containing-numbers-and-strings/20968/4
+//define return array containing digits; need to define the same legnth
+// search backwards
+function extract_digits(a, digit_search_max_len) {
+	arr2 = newArray(a.length); 
+	//loop through each image from the image list
+	for (i = 0; i < a.length; i++) {
+		str=a[i]; 
+		reverse_digits = "";
+		search_count =0;
+		//loop through name backwards for given number of characters
+		for (j = str.length; j > 0; j--) {  
+			search_count=search_count+1;
+			if (search_count<=digit_search_max_len){
+			    ch = str.substring(j-1,j);
+			    if(!isNaN(parseInt(ch)))
+				    reverse_digits += ch;
+			}
+		}
+		digits = "";
+		//revert the digit since it was found by reverse loop
+		for (k = reverse_digits.length; k > 0; k--){
+			ch=reverse_digits.substring(k-1,k);
+			digits += ch;
+		}
+		arr2[i] = parseInt(digits);
+	}
+	return arr2;
+}
+
+//sort valid files by their timepoints
+digit_search_max_len = ch_digit_time_pattern.length;
+sort_num = extract_digits(valid_files,digit_search_max_len);
+//Array.print(sort_num); this will be the timepoint number
+// sort valid files (arg1) by the number (arg2) 
+Array.sort(sort_num,valid_files);
+//Array.print(valid_files);
+
+//function to save drawn dna masks using timepoint index as name
+function save_mask (f, time_index){
+	// open image
+	open(f);
+	name = getTitle();
+	run("ROI Manager...");
+	// draw masks
+	waitForUser ("Draw and add('t') DNA mask for each chromosome mass and Press OK after your selection."); 
+	selectWindow ("ROI Manager");
+	//combine 2 masks into one and save;
+	counts=roiManager("count");
+	if (counts==2){
+		roiManager("Select", newArray(0,1));
+		roiManager("Combine");
+		roiManager("Add");
+		roiManager("Select", 2);
+		roiManager("Save", dir_out+time_index+".roi");	
+		selectWindow ("ROI Manager");
+        run("Close");	
+	}
+	// if mask number not correct, skip;
+	else {
+		selectWindow ("ROI Manager");
+        run("Close");
+		}
+    // close image
+	selectWindow(name);
+	    close();
+}
+
+// run function to save masks
+time_index = 0
+for(f=0;f<valid_files.length;f++){
+	time_index+=1;
+	file=valid_files[f];
+	save_mask(file,time_index);
+	}
